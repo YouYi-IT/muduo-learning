@@ -1,0 +1,15 @@
+# cmake编译产物
+build/
+
+# 日志文件
+*.log
+
+# vim临时文件
+*.swp
+*.swo
+
+# mac系统垃圾
+.DS_Store
+
+# vscode本地配置（可选，如果你不想提交.vscode就放开下面一行）
+# .vscode/

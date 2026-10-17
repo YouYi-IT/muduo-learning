@@ -1,9 +1,12 @@
-#include "Buffer.h"
+#include <muduo/net/Buffer.h>
 
 #include <algorithm>
 #include <errno.h>
 #include <sys/uio.h>
 #include <unistd.h>
+
+namespace muduo::net
+{
 
 Buffer::Buffer(size_t initial_size)
     : buffer_(kCheapPrepend + initial_size),
@@ -106,10 +109,10 @@ ssize_t Buffer::readFd(int fd, int* save_errno)
 // 向fd上发送数据
 ssize_t Buffer::writeFd(int fd, int* save_errno)
 {
-    ssize_t n=::write(fd,peek(),readableBytes());
-    if(n<0)
+    ssize_t n = ::write(fd, peek(), readableBytes());
+    if (n < 0)
     {
-        *save_errno=errno;
+        *save_errno = errno;
     }
     return n;
 }
@@ -157,3 +160,5 @@ void Buffer::makeSpace(size_t len)
         writer_index_ = reader_index_ + readable;
     }
 }
+
+}  // namespace muduo::net

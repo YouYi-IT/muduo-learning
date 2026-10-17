@@ -1,14 +1,17 @@
-#include "EventLoop.h"
-#include "Channel.h"
-#include "CurrentThread.h"
-#include "Logger.h"
-#include "Poller.h"
+#include <muduo/base/CurrentThread.h>
+#include <muduo/base/Logger.h>
+#include <muduo/net/Channel.h>
+#include <muduo/net/EventLoop.h>
+#include <muduo/net/Poller.h>
 
 #include <errno.h>
 #include <fcntl.h>
 #include <memory>
 #include <sys/eventfd.h>
 #include <unistd.h>
+
+namespace muduo::net
+{
 
 // 防止一个线程创建多个EventLoop
 thread_local EventLoop* t_loop_in_this_thread = nullptr;
@@ -38,7 +41,7 @@ int createEventfd()
 EventLoop::EventLoop()
     : looping_(false),
       quit_(false),
-      thread_id_(CurrentThread::tid()),
+      thread_id_(muduo::base::CurrentThread::tid()),
       poller_(Poller::newDefaultPoller(this)),
       wakeup_fd_(createEventfd()),
       wakeup_channel_(new Channel(this, wakeup_fd_)),
@@ -133,7 +136,7 @@ void EventLoop::quit()
     }
 }
 
-Timestamp EventLoop::pollReturnTime() const
+muduo::base::Timestamp EventLoop::pollReturnTime() const
 {
     return poll_return_time_;
 }
@@ -184,7 +187,7 @@ bool EventLoop::hasChannel(Channel* channel)
 // 判断EventLoop对象是否在自己的线程里面
 bool EventLoop::isInLoopThread() const
 {
-    return thread_id_ == CurrentThread::tid();
+    return thread_id_ == muduo::base::CurrentThread::tid();
 }
 
 // 执行回调
@@ -208,3 +211,5 @@ void EventLoop::doPendingFunctors()
 
     calling_pending_functors_ = false;
 }
+
+}  // namespace muduo::net

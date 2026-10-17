@@ -1,30 +1,36 @@
-#include "InetAddress.h"
+#include <muduo/net/InetAddress.h>
 
 #include <string.h>
 
+namespace muduo::net
+{
+
 InetAddress::InetAddress(std::string ip, uint16_t port)
 {
-    addr_.sin_family=AF_INET;
-    addr_.sin_port=htons(port);
-    addr_.sin_addr.s_addr=inet_addr(ip.c_str());
+    addr_.sin_family = AF_INET;
+    addr_.sin_port = htons(port);
+    addr_.sin_addr.s_addr = inet_addr(ip.c_str());
 }
 
-InetAddress::InetAddress(const sockaddr_in& addr) : addr_(addr) {}
+InetAddress::InetAddress(const sockaddr_in& addr)
+    : addr_(addr)
+{
+}
 
 std::string InetAddress::toIp() const
 {
-    char buf[INET_ADDRSTRLEN]={0};
-    inet_ntop(AF_INET,&addr_.sin_addr,buf,sizeof(buf));
+    char buf[INET_ADDRSTRLEN] = {0};
+    inet_ntop(AF_INET, &addr_.sin_addr, buf, sizeof(buf));
     return buf;
 }
 
 std::string InetAddress::toIpPort() const
 {
-    char buf[INET_ADDRSTRLEN+8]={0};
-    inet_ntop(AF_INET,&addr_.sin_addr,buf,sizeof(buf));
-    size_t end=strlen(buf);
-    uint16_t port=ntohs(addr_.sin_port);
-    sprintf(buf+end,":%u",port);
+    char buf[INET_ADDRSTRLEN + 8] = {0};
+    inet_ntop(AF_INET, &addr_.sin_addr, buf, sizeof(buf));
+    size_t end = strlen(buf);
+    uint16_t port = ntohs(addr_.sin_port);
+    sprintf(buf + end, ":%u", port);
     return buf;
 }
 
@@ -40,9 +46,10 @@ const sockaddr_in* InetAddress::getSockAddr() const
 
 void InetAddress::setSockAddr(const sockaddr_in& addr)
 {
-    addr_=addr;
+    addr_ = addr;
 }
 
+}  // namespace muduo::net
 
 // #include<iostream>
 // int main()

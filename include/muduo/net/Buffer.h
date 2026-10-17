@@ -1,15 +1,18 @@
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
+
+namespace muduo::net
+{
 
 class Buffer
 {
 public:
-    static const size_t kCheapPrepend=8;
-    static const size_t kInitialSize=1024;
+    static const size_t kCheapPrepend = 8;
+    static const size_t kInitialSize = 1024;
 
-    explicit Buffer(size_t initial_size=kInitialSize);
+    explicit Buffer(size_t initial_size = kInitialSize);
 
     size_t readableBytes() const;
     size_t writableBytes() const;
@@ -28,13 +31,12 @@ public:
 
     void ensureWritableBytes(size_t len);
 
-
-    void append(const char* data,size_t len);
+    void append(const char* data, size_t len);
 
     // 从fd上读取数据
-    ssize_t readFd(int fd,int* save_errno);
+    ssize_t readFd(int fd, int* save_errno);
     // 向fd上发送数据
-    ssize_t writeFd(int fd,int* save_errno);
+    ssize_t writeFd(int fd, int* save_errno);
 
 private:
     char* begin();
@@ -51,4 +53,6 @@ private:
     std::vector<char> buffer_;
     size_t reader_index_;
     size_t writer_index_;
-} ;
+};
+
+}  // namespace muduo::net

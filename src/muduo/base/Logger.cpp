@@ -1,7 +1,10 @@
-#include "Logger.h"
-#include "Timestamp.h"
+#include <muduo/base/Logger.h>
+#include <muduo/base/Timestamp.h>
 
 #include <iostream>
+
+namespace muduo::base
+{
 
 // 获取日志唯一实例对象
 Logger& Logger::instance()
@@ -11,7 +14,10 @@ Logger& Logger::instance()
 }
 
 // 设置日志级别
-void Logger::setLogLevel(int level) { log_level_ = level; }
+void Logger::setLogLevel(int level)
+{
+    log_level_ = level;
+}
 
 // 写日志
 void Logger::log(std::string msg)
@@ -36,3 +42,5 @@ void Logger::log(std::string msg)
 
     std::cout << Timestamp().now().toString() << ":" << msg << std::endl;
 }
+
+}  // namespace muduo::base

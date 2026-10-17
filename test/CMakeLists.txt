@@ -1,0 +1,6 @@
+file(GLOB TEST_SRC *.cc)
+foreach(testfile ${TEST_SRC})
+    get_filename_component(testname ${testfile} NAME_WE)
+    add_executable(${testname} ${testfile})
+    target_link_libraries(${testname} muduo_net muduo_base pthread)
+endforeach()

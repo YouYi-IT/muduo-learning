@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Timestamp.h"
-#include "noncopyable.h"
+#include <muduo/base/Timestamp.h>
+#include <muduo/base/noncopyable.h>
 
 #include <atomic>
 #include <functional>
@@ -9,10 +9,13 @@
 #include <mutex>
 #include <vector>
 
+namespace muduo::net
+{
+
 class Channel;
 class Poller;
 
-class EventLoop : public noncopyable
+class EventLoop : public muduo::base::noncopyable
 {
 public:
     using Functor = std::function<void()>;
@@ -25,7 +28,7 @@ public:
     // 退出事件循环
     void quit();
 
-    Timestamp pollReturnTime() const;
+    muduo::base::Timestamp pollReturnTime() const;
 
     // 在当前loop中执行cb
     void runInLoop(Functor cb);
@@ -44,17 +47,17 @@ public:
     bool isInLoopThread() const;
 
 private:
-    void handleRead();  // wakeup
-    void doPendingFunctors();   // 执行回调
+    void handleRead();         // wakeup
+    void doPendingFunctors();  // 执行回调
 
     using ChannelList = std::vector<Channel*>;
 
-    std::atomic_bool looping_; // 原子操作，通过CAS实现
-    std::atomic_bool quit_;    // 标志退出loop循环
-    const pid_t thread_id_;    // 记录当前loop所在线程的id
+    std::atomic_bool looping_;  // 原子操作，通过CAS实现
+    std::atomic_bool quit_;     // 标志退出loop循环
+    const pid_t thread_id_;     // 记录当前loop所在线程的id
     // Linux 下线程 TID 用 gettid() 或 syscall(SYS_gettid) 获取，类型是 pid_t
     // POSIX 的线程 ID 是 pthread_t，它不保证是整数，不能直接和 pid_t 混用
-    Timestamp poll_return_time_; // poller返回发生事件的channels的时间点
+    muduo::base::Timestamp poll_return_time_;  // poller返回发生事件的channels的时间点
     std::unique_ptr<Poller> poller_;
 
     // 主要作用：当mainloop获取一个新用户的channel
@@ -64,7 +67,9 @@ private:
 
     ChannelList active_channels_;
 
-    std::atomic_bool calling_pending_functors_; // 标识当前loop是否有需要执行的回调操作
-    std::vector<Functor> pending_functors_;     // 存储loop需要执行的所有回调操作
-    std::mutex mutex_;                          // 用来保护上面的vector容器的线程安全操作
+    std::atomic_bool calling_pending_functors_;  // 标识当前loop是否有需要执行的回调操作
+    std::vector<Functor> pending_functors_;      // 存储loop需要执行的所有回调操作
+    std::mutex mutex_;                           // 用来保护上面的vector容器的线程安全操作
 };
+
+}  // namespace muduo::net

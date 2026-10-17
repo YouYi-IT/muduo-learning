@@ -1,14 +1,18 @@
-#include "TcpConnection.h"
-#include "Channel.h"
-#include "EventLoop.h"
-#include "Logger.h"
-#include "Socket.h"
+#include <muduo/net/Socket.h>
+#include <muduo/base/Logger.h>
+#include <muduo/base/Timestamp.h>
+#include <muduo/net/Channel.h>
+#include <muduo/net/EventLoop.h>
+#include <muduo/net/TcpConnection.h>
 
 #include <errno.h>
 #include <netinet/tcp.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+namespace muduo::net
+{
 
 TcpConnection::TcpConnection(EventLoop* loop, const std::string& name, int sockfd, const InetAddress& local_addr,
                              const InetAddress& peer_addr)
@@ -23,7 +27,7 @@ TcpConnection::TcpConnection(EventLoop* loop, const std::string& name, int sockf
       highwater_mark_(64 * 1024 * 1024)  // 64M
 {
     // 给channel设置相应的回调函数
-    channel_->setReadCallback([this](Timestamp receive_time) { handleRead(receive_time); });
+    channel_->setReadCallback([this](const muduo::base::Timestamp& receive_time) { handleRead(receive_time); });
     channel_->setWriteCallback([this]() { handleWrite(); });
     channel_->setCloseCallback([this]() { handleClose(); });
     channel_->setErrorCallback([this]() { handleError(); });
@@ -68,6 +72,7 @@ void TcpConnection::setWriteCompleteCallback(const WriteCompleteCallback cb)
 void TcpConnection::setHighWaterMarkCallback(const HighWaterMarkCallback cb, size_t highwater_mark)
 {
     highwater_mark_callback_ = std::move(cb);
+    highwater_mark_ = highwater_mark;
 }
 void TcpConnection::setCloseCallback(const CloseCallback cb)
 {
@@ -97,7 +102,7 @@ void TcpConnection::connectDestroyed()
     channel_->remove();
 }
 
-void TcpConnection::handleRead(Timestamp receive_time)
+void TcpConnection::handleRead(const muduo::base::Timestamp& receive_time)
 {
     int saved_errno = 0;
     ssize_t n = input_buffer_.readFd(channel_->getFd(), &saved_errno);
@@ -283,6 +288,8 @@ void TcpConnection::shutdownInLoop()
     // output_buffer种没有要发送的数据，就关闭，还有数据的话就不用管，handleWrite里面写了当数据发送完后调用shutdownInLoop
     if (!channel_->isWriting())
     {
-        socket_->shutdownWrite();   // 关闭写端，发送FIN，当对端也发送FIN，channel的revents就会有EPOLLHUP
+        socket_->shutdownWrite();  // 关闭写端，发送FIN，当对端也发送FIN，channel的revents就会有EPOLLHUP
     }
 }
+
+}  // namespace muduo::net

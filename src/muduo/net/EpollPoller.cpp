@@ -1,13 +1,16 @@
 #define MUDEBUG
 
-#include "EpollPoller.h"
-#include "Channel.h"
-#include "EventLoop.h"
-#include "Logger.h"
+#include <muduo/base/Logger.h>
+#include <muduo/net/Channel.h>
+#include <muduo/net/EpollPoller.h>
+#include <muduo/net/EventLoop.h>
 
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+
+namespace muduo::net
+{
 
 const int kNew = -1;
 const int kAdded = 1;
@@ -18,7 +21,8 @@ const int kDeleted = 2;
 // 系列函数成功加载并执行新程序时，内核会自动关闭这个 epoll fd 这样可以防止
 // epoll fd 被新程序继承，避免文件描述符泄漏
 EpollPoller::EpollPoller(EventLoop* loop)
-    : Poller(loop), epollfd_(epoll_create1(EPOLL_CLOEXEC)),
+    : Poller(loop),
+      epollfd_(epoll_create1(EPOLL_CLOEXEC)),
       events_(kInitEventListSize)
 {
     if (epollfd_ < 0)
@@ -27,18 +31,20 @@ EpollPoller::EpollPoller(EventLoop* loop)
     }
 }
 
-EpollPoller::~EpollPoller() { ::close(epollfd_); }
+EpollPoller::~EpollPoller()
+{
+    ::close(epollfd_);
+}
 
 // 重写基类Poller里的抽象方法
-Timestamp EpollPoller::poll(int timeout_ms, ChannelList* active_channels)
+muduo::base::Timestamp EpollPoller::poll(int timeout_ms, ChannelList* active_channels)
 {
     // poll很平凡，所有用DEBUG，可以关闭，不用随时都打印
     LOG_DEBUG("func=%s => fd total count:%zu", __func__, channels_.size());
 
-    int num_events = epoll_wait(epollfd_, events_.data(),
-                                static_cast<int>(events_.size()), timeout_ms);
+    int num_events = epoll_wait(epollfd_, events_.data(), static_cast<int>(events_.size()), timeout_ms);
     int save_errno = errno;
-    Timestamp now(Timestamp::now());
+    muduo::base::Timestamp now(muduo::base::Timestamp::now());
 
     if (num_events > 0)
     {
@@ -55,7 +61,7 @@ Timestamp EpollPoller::poll(int timeout_ms, ChannelList* active_channels)
     {
         LOG_DEBUG("%s timeout!", __func__);
     }
-    else // 外部中断
+    else  // 外部中断
     {
         if (save_errno != EINTR)
         {
@@ -71,8 +77,8 @@ Timestamp EpollPoller::poll(int timeout_ms, ChannelList* active_channels)
 void EpollPoller::updateChannel(Channel* channel)
 {
     const int index = channel->getIndex();
-    LOG_INFO("func=%s => fd=%d events=%d index=%d", __func__, channel->getFd(),
-             channel->getEvents(), channel->getIndex());
+    LOG_INFO("func=%s => fd=%d events=%d index=%d", __func__, channel->getFd(), channel->getEvents(),
+             channel->getIndex());
 
     if (index == kNew || index == kDeleted)
     {
@@ -85,7 +91,7 @@ void EpollPoller::updateChannel(Channel* channel)
         channel->setIndex(kAdded);
         update(EPOLL_CTL_ADD, channel);
     }
-    else // channel已经在poller上注册了
+    else  // channel已经在poller上注册了
     {
         if (channel->isNoneEvents())
         {
@@ -115,8 +121,7 @@ void EpollPoller::removeChannel(Channel* channel)
 }
 
 // 填写活跃的连接
-void EpollPoller::fillActiveChannels(int num_events,
-                                     ChannelList* active_channels) const
+void EpollPoller::fillActiveChannels(int num_events, ChannelList* active_channels) const
 {
     for (int i = 0; i < num_events; ++i)
     {
@@ -132,7 +137,7 @@ void EpollPoller::update(int operation, Channel* channel)
 {
     // epoll_event event;
     // memset(&event,0,sizeof(event));
-    struct epoll_event event{}; // C++11 值初始化，等价于零初始化
+    struct epoll_event event{};  // C++11 值初始化，等价于零初始化
     event.events = channel->getEvents();
     // data
     // 是联合体，同一时刻只能有效使用其中一个成员，要么是fd，要么是ptr，要么是其他
@@ -152,3 +157,5 @@ void EpollPoller::update(int operation, Channel* channel)
         }
     }
 }
+
+}  // namespace muduo::net

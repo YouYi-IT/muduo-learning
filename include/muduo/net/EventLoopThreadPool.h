@@ -1,26 +1,29 @@
 #pragma once
 
-#include "noncopyable.h"
+#include <muduo/base/noncopyable.h>
 
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
+
+namespace muduo::net
+{
 
 class EventLoop;
 class EventLoopThread;
 
-class EventLoopThreadPool:public noncopyable
+class EventLoopThreadPool : public muduo::base::noncopyable
 {
 public:
-    using ThreadInitCallback=std::function<void(EventLoop*)>;
+    using ThreadInitCallback = std::function<void(EventLoop*)>;
 
-    EventLoopThreadPool(EventLoop* base_loop,const std::string& name_arg);
+    EventLoopThreadPool(EventLoop* base_loop, const std::string& name_arg);
     ~EventLoopThreadPool();
 
     void setThreadNum(int num_threads = 0);
 
-    void start(const ThreadInitCallback& cb=ThreadInitCallback());
+    void start(const ThreadInitCallback& cb = ThreadInitCallback());
 
     // 如果是工作在多线程中，base_loop默认以轮询的方式分配channel给subloop
     EventLoop* getNextLoop();
@@ -39,3 +42,5 @@ private:
     std::vector<std::unique_ptr<EventLoopThread>> threads_;
     std::vector<EventLoop*> loops_;
 };
+
+}  // namespace muduo::net

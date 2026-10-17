@@ -1,17 +1,20 @@
 #pragma once
 
-#include "noncopyable.h"
+#include <muduo/base/noncopyable.h>
+
+namespace muduo::net
+{
 
 class InetAddress;
 
-class Socket:public noncopyable
+class Socket : public muduo::base::noncopyable
 {
 public:
     explicit Socket(int sockfd);
     ~Socket();
 
     int getFd() const;
-    void bindAddress(const InetAddress&localaddr);
+    void bindAddress(const InetAddress& localaddr);
     void listen();
     int accept(InetAddress* peeraddr);
 
@@ -25,3 +28,5 @@ public:
 private:
     const int sockfd_;
 };
+
+}  // namespace muduo::net

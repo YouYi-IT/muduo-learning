@@ -1,9 +1,12 @@
-#include "TcpServer.h"
-#include "Logger.h"
-#include "TcpConnection.h"
+#include <muduo/base/Logger.h>
+#include <muduo/net/TcpConnection.h>
+#include <muduo/net/TcpServer.h>
 
 #include <functional>
 #include <string.h>
+
+namespace muduo::net
+{
 
 EventLoop* CheckLoopNotNull(EventLoop* loop)
 {
@@ -29,17 +32,16 @@ TcpServer::TcpServer(EventLoop* loop, const InetAddress& listen_addr, const std:
 }
 
 // TcpConnection 对象内部有一个 Channel，注册在某个 EventLoop 上
-// 如果 TcpServer 析构时直接让 connections_ 里的 shared_ptr 析构，TcpConnection 可能会在非所属 EventLoop 线程中被销毁，导致 Channel 的移除操作出现线程安全问题
-// 所以必须把“清理连接”这件事投递到该连接所属的 EventLoop 线程去执行
+// 如果 TcpServer 析构时直接让 connections_ 里的 shared_ptr 析构，TcpConnection 可能会在非所属 EventLoop
+// 线程中被销毁，导致 Channel 的移除操作出现线程安全问题 所以必须把“清理连接”这件事投递到该连接所属的 EventLoop
+// 线程去执行
 TcpServer::~TcpServer()
 {
-    for(auto& item:connections_)
+    for (auto& item : connections_)
     {
         TcpConnectionPtr conn(item.second);
         item.second.reset();
-        conn->getLoop()->runInLoop([conn](){
-            conn->connectDestroyed();
-        });
+        conn->getLoop()->runInLoop([conn]() { conn->connectDestroyed(); });
     }
 }
 
@@ -90,45 +92,40 @@ void TcpServer::newConnection(int sockfd, const InetAddress& peer_addr)
 
     // 通过sockfd获取其绑定本机的ip地址和端口信息
     sockaddr_in local;
-    ::bzero(&local,sizeof(local));
-    socklen_t addrlen=sizeof(local);
-    if(::getsockname(sockfd,(sockaddr*)&local,&addrlen)<0)
+    ::bzero(&local, sizeof(local));
+    socklen_t addrlen = sizeof(local);
+    if (::getsockname(sockfd, (sockaddr*)&local, &addrlen) < 0)
     {
         LOG_ERROR("sockets::getLocalAddr");
     }
     InetAddress local_addr(local);
 
     // 根据连接成功的sockfd，创建TcpConnection连接对象
-    TcpConnectionPtr conn(std::make_shared<TcpConnection>(ioloop,conn_name,sockfd,local_addr,peer_addr));
-    connections_[conn_name]=conn;
+    TcpConnectionPtr conn(std::make_shared<TcpConnection>(ioloop, conn_name, sockfd, local_addr, peer_addr));
+    connections_[conn_name] = conn;
     // TcpServer => TcpConnection => Channel => Poller => notify channel调用回调
     conn->setConnectionCallback(connection_callback_);
     conn->setMessageCallback(message_callback_);
     conn->setWriteCompleteCallback(write_complete_callback_);
-    
-    conn->setCloseCallback([this](const TcpConnectionPtr& conn1){
-        removeConnection(conn1);
-    });
-    ioloop->runInLoop([conn](){
-        conn->connectEstablished();
-    });
+
+    conn->setCloseCallback([this](const TcpConnectionPtr& conn1) { removeConnection(conn1); });
+    ioloop->runInLoop([conn]() { conn->connectEstablished(); });
 }
 
 void TcpServer::removeConnection(const TcpConnectionPtr& conn)
 {
-    loop_->runInLoop([this,conn](){
-        removeConnectionInLoop(conn);
-    });
+    loop_->runInLoop([this, conn]() { removeConnectionInLoop(conn); });
 }
 
 void TcpServer::removeConnectionInLoop(const TcpConnectionPtr& conn)
 {
-    LOG_INFO("TcpServer::removeConnectionInLoop [%s] - connection %s",name_.data(),conn->getName().data());
-    
-    size_t n=connections_.erase(conn->getName());
-    EventLoop* ioloop=conn->getLoop();
-    // 和TcpConnection种的 self = shared_from_this() 一样，用的是智能指针，让lambda捕获，计数器加1，保证能完成回调，而不是在TcpConnection中用this这个普通指针
-    ioloop->queueInLoop([conn](){
-        conn->connectDestroyed();
-    });
+    LOG_INFO("TcpServer::removeConnectionInLoop [%s] - connection %s", name_.data(), conn->getName().data());
+
+    size_t n = connections_.erase(conn->getName());
+    EventLoop* ioloop = conn->getLoop();
+    // 和TcpConnection种的 self = shared_from_this()
+    // 一样，用的是智能指针，让lambda捕获，计数器加1，保证能完成回调，而不是在TcpConnection中用this这个普通指针
+    ioloop->queueInLoop([conn]() { conn->connectDestroyed(); });
 }
+
+}  // namespace muduo::net

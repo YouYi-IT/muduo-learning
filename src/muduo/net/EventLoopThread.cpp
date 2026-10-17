@@ -1,8 +1,10 @@
-#include "EventLoopThread.h"
-#include "EventLoop.h"
+#include <muduo/net/EventLoop.h>
+#include <muduo/net/EventLoopThread.h>
 
-EventLoopThread::EventLoopThread(const ThreadInitCallback& cb,
-                                 const std::string& name)
+namespace muduo::net
+{
+
+EventLoopThread::EventLoopThread(const ThreadInitCallback& cb, const std::string& name)
     : loop_(nullptr),
       exiting_(false),
       thread_(std::bind(&EventLoopThread::threadFunc, this), name),
@@ -64,3 +66,5 @@ void EventLoopThread::threadFunc()
     std::unique_lock<std::mutex> lock(mutex_);
     loop_ = nullptr;
 }
+
+}  // namespace muduo::net

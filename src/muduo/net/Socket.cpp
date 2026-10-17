@@ -1,13 +1,17 @@
-#include "Socket.h"
-#include "InetAddress.h"
-#include "Logger.h"
+#include <muduo/net/Socket.h>
+#include <muduo/base/Logger.h>
+#include <muduo/net/InetAddress.h>
 
 #include <netinet/tcp.h>
 #include <strings.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
-Socket::Socket(int sockfd) : sockfd_(sockfd)
+namespace muduo::net
+{
+
+Socket::Socket(int sockfd)
+    : sockfd_(sockfd)
 {
 }
 
@@ -78,3 +82,5 @@ void Socket::setKeepAlive(bool on)
     int optval = on ? 1 : 0;
     ::setsockopt(sockfd_, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval));
 }
+
+}  // namespace muduo::net

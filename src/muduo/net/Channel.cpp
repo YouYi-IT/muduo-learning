@@ -1,14 +1,23 @@
-#include "Channel.h"
-#include "EventLoop.h"
-#include "Logger.h"
+#include <muduo/base/Logger.h>
+#include <muduo/net/Channel.h>
+#include <muduo/net/EventLoop.h>
 
 #include <sys/epoll.h>
+
+namespace muduo::net
+{
 
 const int Channel::kNoneEvent = 0;
 const int Channel::kReadEvent = EPOLLIN | EPOLLPRI;
 const int Channel::kWriteEvent = EPOLLOUT;
 
-Channel::Channel(EventLoop* loop, int fd) : loop_(loop), fd_(fd), events_(0), revents_(0), index_(-1), tied_(false)
+Channel::Channel(EventLoop* loop, int fd)
+    : loop_(loop),
+      fd_(fd),
+      events_(0),
+      revents_(0),
+      index_(-1),
+      tied_(false)
 {
 }
 
@@ -109,7 +118,7 @@ EventLoop* Channel::ownerLoop() const
 }
 
 // fd收到poller通知后，处理事件
-void Channel::handleEvent(Timestamp receive_time)
+void Channel::handleEvent(const muduo::base::Timestamp& receive_time)
 {
     if (tied_)
     {
@@ -125,12 +134,12 @@ void Channel::handleEvent(Timestamp receive_time)
         handleEventWithGuard(receive_time);
     }
 }
-void Channel::handleEventWithGuard(Timestamp receive_time)
+void Channel::handleEventWithGuard(const muduo::base::Timestamp& receive_time)
 {
     LOG_INFO("channel handleEvent revents : %d", revents_);
 
     // 不能return，必须所有事件都检查
-    
+
     // 如果没有 !(revents_ & EPOLLIN)
     // 只要看到 EPOLLHUP 就立刻调 close_callback_() 关闭连接，就会丢掉 socket 缓冲区里还没读完的数据
     // 只有不正常关闭才会走这个，一般正常关闭都走read_callback里执行的 handleRead 里n==0的close
@@ -179,3 +188,5 @@ void Channel::remove()
 {
     // loop_->removeChannel(this);
 }
+
+}  // namespace muduo::net

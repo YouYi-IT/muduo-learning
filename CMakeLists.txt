@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(muduo_tcp_server)
+project(muduo_learning)
 
 add_subdirectory(src/muduo/base)
 add_subdirectory(src/muduo/net)

@@ -1,19 +1,22 @@
 #pragma once
 
-#include "noncopyable.h"
+#include <muduo/base/noncopyable.h>
 
+#include <atomic>
 #include <functional>
 #include <memory>
 #include <string>
 #include <thread>
-#include <atomic>
+
+namespace muduo::base
+{
 
 class Thread : public noncopyable
 {
 public:
     using ThreadFunc = std::function<void()>;
 
-    explicit Thread(ThreadFunc func,const std::string& name=std::string());
+    explicit Thread(ThreadFunc func, const std::string& name = std::string());
     ~Thread();
 
     void start();
@@ -30,9 +33,11 @@ private:
 
     bool started_;
     bool joined_;
-    std::shared_ptr<std::thread> thread_; // 不能直接std::thread thread_; 这样就直接开始线程了
+    std::shared_ptr<std::thread> thread_;  // 不能直接std::thread thread_; 这样就直接开始线程了
     pid_t tid_;
     ThreadFunc func_;
     std::string name_;
     static std::atomic_int num_created_;
 };
+
+}  // namespace muduo::base
